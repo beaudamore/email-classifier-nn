@@ -1,6 +1,7 @@
 # Generated datasets and model artifacts
 data/source-raw/
 data/source-clean/
+data/source-clean-*/
 data/synthetic/
 models/
 
