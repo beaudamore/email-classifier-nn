@@ -3,7 +3,7 @@
 **Hardware**: DGX Spark (GB10, 128 GB unified memory)
 **Project root**: `training/email-classifier-nn/`
 
-Implementation status, completed artifacts, and next actions are tracked in `PROGRESS.md`.
+The product framing, requirements, and current status are in `OVERVIEW.md`. Implementation status, completed artifacts, and next actions are tracked in `PROGRESS.md`.
 
 ---
 
@@ -22,17 +22,17 @@ Implementation status, completed artifacts, and next actions are tracked in `PRO
 
 Volume + diversity + recency, with strict leakage control. Same discipline as the PubMed pipelines: cleaning, fingerprint deduplication, quality gates, balanced sampling or weighted loss, and grouped train/val/test splits.
 
-### 2.1 Hugging Face sources (verified 2026-08-14)
+### 2.1 Hugging Face sources (verified 2026-08-14; MeAJOR dropped 2026-08-24)
 
 **All public datasets are acquired exclusively from Hugging Face.** The pipeline does not download from corpus host websites, mirrors, or arbitrary URLs.
 
 | Source | Location | Contents | Notes |
 |---|---|---|---|
 | **Seven Phishing/Spam Email Datasets** | HF: `puyang2025/seven-phishing-email-datasets` | 203,017 rows; raw `text` + `subject` + `sender`/`receiver`/`date` + `urls` count + `dataset_name` + binary `label` (0=ham, 1=phish/spam) | Unified row-level corpus covering **SpamAssassin (5,805), CEAS-08 (39,154), Enron (29,767), Ling-Spam (2,859), TREC-05 (55,275), TREC-06 (16,400), TREC-07 (53,757)**. No single license is asserted; component licenses apply. One repository file is flagged "unsafe" by the HF scanner because the corpus contains malicious email content. Never open links or attachments from the data. |
-| **MeAJOR Corpus** | HF: `simlab-vs/meajor_cleaned_preprocessed` | 108,685 rows; anonymized `body`, subject and header fields, URLs, attachment metadata, engineered URL features, source, and binary `label` (0=benign, 1=phishing) | GECAD dataset (arXiv 2507.17978), CC-BY-4.0. Covers **TREC-05/06/07, Nazario Phishing Corpus, and Nigerian Fraud**, including the requested Nazario-derived data entirely through Hugging Face. |
+| **MeAJOR Corpus** (DROPPED, do not re-add) | HF: `simlab-vs/meajor_cleaned_preprocessed` | 108,685 rows; anonymized `body`, subject and header fields, URLs, attachment metadata, engineered URL features, source, and binary `label` (0=benign, 1=phishing) | GECAD dataset (arXiv 2507.17978), CC-BY-4.0. Covers **TREC-05/06/07, Nazario Phishing Corpus, and Nigerian Fraud**, including the requested Nazario-derived data entirely through Hugging Face. |
 | **E-PhishGen** | HF: `pajola/e-phishGen` | Official repository for the AISec 2025 E-PhishGen dataset; 10K–100K size category | MIT license. The dataset card currently says the repository is under construction, so it is recorded but not included in the default reproducible pipeline until its schema and files are stable. |
 
-The seven-corpus dataset and MeAJOR overlap on TREC-05/06/07. Exact and near-duplicate deduplication is therefore mandatory after merging them. Separate SpamAssassin or Enron HF mirrors are not added because those corpora are already represented in the seven-corpus repository and extra mirrors would add provenance ambiguity without adding a new source family.
+MeAJOR was used in the v1 build and removed in v2: it contains only anonymized TREC-05/06/07 rows, which the seven-corpus dataset already supplies raw, and the anonymization defeated near-duplicate detection, contaminating 46.5% of the v1 test set. The v1 build was deleted on 2026-10-09. The current pipeline uses the seven-corpus dataset alone. Separate SpamAssassin or Enron HF mirrors are not added because those corpora are already represented in the seven-corpus repository and extra mirrors would add provenance ambiguity without adding a new source family.
 
 ### 2.2 Future sources
 
@@ -42,10 +42,10 @@ The seven-corpus dataset and MeAJOR overlap on TREC-05/06/07. Exact and near-dup
 
 ### 2.3 Pipeline (datagen notebook)
 
-`notebooks/datagen/email_phishing_datagen.ipynb`:
+`notebooks/datagen/email_phishing_datagen_v2.ipynb`:
 
-1. **Download** — pull `puyang2025/seven-phishing-email-datasets` and `simlab-vs/meajor_cleaned_preprocessed` from Hugging Face into local `data/source-raw/`.
-2. **Normalize and merge** — preserve `hf_dataset`, map both source schemas to `body, subject, sender, receiver, date, urls, url_count, attachment_count, has_attachments, source, label`, then concatenate.
+1. **Download** — pull `puyang2025/seven-phishing-email-datasets` from Hugging Face into local `data/source-raw/`.
+2. **Normalize** — preserve `hf_dataset`, map the source schema to `body, subject, sender, receiver, date, urls, url_count, attachment_count, has_attachments, source, label`.
 3. **Quality gates** — drop empty/near-empty bodies, non-parseable rows, label sanity checks.
 4. **Deduplication** —
    - Exact: SHA-256 fingerprint of normalized `subject + body`.
@@ -53,11 +53,11 @@ The seven-corpus dataset and MeAJOR overlap on TREC-05/06/07. Exact and near-dup
 5. **Leakage-safe splits** — 80/10/10 train/val/test, **grouped** so that no sender domain and no near-duplicate cluster spans splits; stratified by label and source where the grouping allows.
 6. **Feature engineering** — per-email engineered features for the baseline model: URL stats, header anomalies, lexical/character statistics.
 7. **Adversarial augmentation (train split only)** — deterministic obfuscation copies: homoglyph substitution, zero-width character injection, URL obfuscation. Never added to val/test (val/test adversarial evaluation uses a separately generated fixed set).
-8. **Verify & save** — class balance, per-source distribution, cross-split leakage checks; write `data/source-clean/{train,val,test}.parquet` + a dataset manifest (fingerprints, counts, config).
+8. **Verify & save** — class balance, per-source distribution, cross-split leakage checks; write `data/source-clean-v2/{train,val,test,adversarial_test}.parquet` + a dataset manifest (fingerprints, counts, config).
 
 ### 2.4 Known data risks (from source cards)
 
-- Temporal shift: classic corpora are historical; modern campaigns differ. Mitigate with MeAJOR, then E-PhishGen after its HF repository stabilizes, plus proprietary phases.
+- Temporal shift: classic corpora are historical; modern campaigns differ. Mitigate with E-PhishGen after its HF repository stabilizes, plus proprietary phases.
 - `label=1` mixes phishing and generic spam in the classic sources.
 - PII present in real corpora (esp. Enron) — handle accordingly; redact before any external sharing.
 - Live malicious URLs in the data — never fetch them.
@@ -79,7 +79,7 @@ The seven-corpus dataset and MeAJOR overlap on TREC-05/06/07. Exact and near-dup
 
 ## 4. Training & Evaluation Priorities
 
-- **Metrics**: precision / recall / F1 per class, ROC-AUC, calibration (reliability curves). Optimize for **high phishing recall** at a false-positive rate low enough that analysts trust the tool; report the full precision-recall tradeoff, not a single operating point.
+- **Metrics**: precision / recall / F1 per class, ROC-AUC, calibration (reliability curves). Optimize for **high phishing recall** at a false-positive rate low enough that analysts trust the tool; report the full precision-recall tradeoff, not a single operating point. Working targets (`OVERVIEW.md` §5): recall ≥ 95% at FPR ≤ 1% for alerting, FPR ≤ 0.1% for automatic actions.
 - **Adversarial robustness**: evaluate on the held-out obfuscated set from day one.
 - **Continuous evaluation**: hold out the most recent campaigns (or newest-by-date slices) as a temporal test set.
 - **Explainability**: feature attribution (SHAP for XGBoost; integrated gradients / attention maps for the NN) so a SOC can see *why* a message was flagged.
@@ -149,16 +149,18 @@ training/email-classifier-nn/
     PRODUCTION_IMPLEMENTATION_OPTIONS.md
   data/
     source-raw/                  ← Hugging Face source cache
-    source-clean/                ← immutable real splits and manifest
+    source-clean-v2/             ← immutable real splits and manifest
     synthetic/                   ← generated training and evaluation artifacts
   notebooks/
     datagen/
-      email_phishing_datagen.ipynb
+      email_phishing_datagen_v2.ipynb
     training/
       phase2_xgboost_mlp_baselines.ipynb
+      phase3_text_cnn_bigru_v2.ipynb
     eval/
   models/
-    phase2-{fingerprint}/        ← versioned model and provenance artifacts
+    phase2-v2-{fingerprint}/     ← versioned model and provenance artifacts
+    phase3-cnn-bigru-v2-{fingerprint}/
 ```
 
 ## 6. Phase Roadmap

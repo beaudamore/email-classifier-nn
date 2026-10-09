@@ -62,7 +62,7 @@ Leakage is the failure mode that already bit this project once (v1, 46.5% test c
 
 ### 3.3 Operating point selection
 
-Threshold is chosen on `val` to maximize F1, ties broken by higher recall then lower threshold. This is recorded in `thresholds.json`. For deployment, the operating point should instead be chosen from the recall@FPR table against a stated FPR budget. Status: F1-max done; FPR-budget selection open.
+Threshold is chosen on `val` to maximize F1, ties broken by higher recall then lower threshold. This is recorded in `thresholds.json`. For deployment, the operating point should instead be chosen from the recall@FPR table against a stated FPR budget. Working budget (`OVERVIEW.md` §5): FPR ≤ 1% for alerts, ≤ 0.1% for automatic actions. At the F1-max threshold the v2 models sit at 15 to 16% test FPR, so this item is now the gating one. Status: F1-max done; FPR-budget selection open.
 
 ### 3.4 Calibration
 
@@ -79,7 +79,7 @@ A probability that says 0.9 should be right about 90% of the time. Calibration i
 
 ### 3.5 Slice-based evaluation
 
-Aggregate metrics hide failure on subpopulations. Report every metric in 3.1 and 3.2 per slice, and report the worst slice.
+Aggregate metrics hide failure on subpopulations. Report every metric in 3.1 and 3.2 per slice, and report the worst slice. Concrete motivation: the Phase 3 text model has FPR 1.8% on `val` and 15.3% on `test` with identical per-corpus mixes. The sender-domain slice found it: three TREC-07 bulk-mail domains held out in test are 89% of the test false positives (2026-10-09). Aggregate numbers hid a domain-level effect, which is also why the bootstrap in section 4 must resample groups, not rows.
 
 | Slice | Status |
 |---|---|
@@ -135,7 +135,7 @@ Deployment targets modest hardware. Measure, do not assume.
 
 | Measurement | Method | Status |
 |---|---|---|
-| Parameter count and model size on disk | Reported in the run manifest | Partial: not yet recorded |
+| Parameter count and model size on disk | Reported in the run manifest | Partial: recorded in `MODEL_CARD.md` (6.68 M params / 27 MB text, 11 MB XGBoost), not yet in the manifest |
 | Latency | p50 and p95, batch size 1 and 32, CPU and GPU, 1,000 warm requests, reported with hardware | Open |
 | Throughput | Emails per second at batch 32 on CPU | Open |
 | Peak memory | During inference, CPU and GPU | Open |
@@ -163,7 +163,7 @@ Before a model is promoted:
 5. Paired comparison against the previous promoted model: CI of the difference and McNemar p-value.
 6. Error-analysis summary with the top failure categories.
 7. Latency table.
-8. Model card: intended use, training data and its known biases, metrics, limitations, and what the model must not be used for.
+8. Model card: intended use, training data and its known biases, metrics, limitations, and what the model must not be used for. First version: `MODEL_CARD.md`.
 9. A reviewer who did not train the model signs off on items 1 to 8.
 
 ### Backlog, in priority order

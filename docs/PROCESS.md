@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-10-09
 **Audience:** anyone running or extending this repo, on the DGX Spark or on their own machine.
-**Companion docs:** `PLAN.md` (why and what), `PROGRESS.md` (implementation log, stale after 2026-08-14), `../README.md` (current results and status).
+**Companion docs:** `OVERVIEW.md` (product, requirements, status), `PLAN.md` (why and what), `PROGRESS.md` (implementation log), `MODEL_CARD.md` and `../README.md` (current results).
 
 This document is the *how*: the order of operations, what each step produces, where it runs, and how work moves between machines without losing anything.
 
@@ -35,12 +35,11 @@ data/source-clean-v2/{train,val,test,adversarial_test}.parquet + manifest.json
 
 | Version | Directory | Sources | Status |
 |---|---|---|---|
-| v1 | `data/source-clean/` | seven-corpus + MeAJOR | **Contaminated** (46.5% test overlap). Frozen. Never retrain against it. |
 | v2 | `data/source-clean-v2/` | seven-corpus only | Current. All new runs use this. |
 
 Why v1 failed: MeAJOR is an anonymized re-release of TREC 05/06/07, which the seven-corpus dataset already contains raw. The anonymization changed enough text to defeat near-duplicate detection, so the same emails landed in both train and test. The v2 datagen notebook drops MeAJOR and records a subject-twin rate per split so residual overlap stays visible.
 
-The v1 notebooks and the v1 model directories are kept for the record only. Results measured on v1 are upper bounds, not real generalization.
+v1 was retired and deleted on 2026-10-09: its notebook, splits under `data/source-clean/`, raw MeAJOR pull, and model directories are gone. The v1 notebooks remain in git history before that date. Results measured on v1 were upper bounds, not real generalization, and are not reported anywhere in the repo.
 
 ---
 
@@ -140,4 +139,4 @@ When the data pipeline changes in a way that alters the splits:
 
 ## 8. Roadmap pointer
 
-Phases 4 and 5 (targeted generated-data hardening, multi-class and additional modalities) are specified in `PLAN.md` sections 4.1 and 6. Neither has started. The immediate open task is the v2 run of Phases 2 and 3 and the README results update.
+Phases 4 and 5 (targeted generated-data hardening, multi-class and additional modalities) are specified in `PLAN.md` sections 4.1 and 6. Neither has started. Phases 2 and 3 have run on v2; the ordered next steps are in `OVERVIEW.md` section 9 and `PROGRESS.md`.

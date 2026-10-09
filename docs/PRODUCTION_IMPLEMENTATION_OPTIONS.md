@@ -11,7 +11,7 @@ The classifier does not run inside Outlook or Exchange Online. It runs in a sepa
 Every implementation option requires the following components:
 
 1. **Shared feature library** -- one versioned implementation of the twelve Phase 1 features, used by both training and inference.
-2. **Inference service** -- loads the selected model, scaler when required, calibrator, threshold, feature order, and run manifest.
+2. **Inference service** -- loads the selected model and its run manifest: for the XGBoost path the model, calibrator, threshold, and feature order; for the text path `model_state.pt`, `vocab.json`, the 384-token truncation rule, and the threshold. Both must reproduce the notebook's predictions on a held-out parity set before serving.
 3. **Policy layer** -- converts a calibrated probability into an operational action. Policy must remain separate from model inference.
 4. **Decision log** -- records message identifier, model version, feature version, probability, threshold, decision, latency, and action.
 5. **Feedback path** -- captures analyst and user dispositions for evaluation and later retraining.
@@ -26,8 +26,8 @@ The inference result should use a stable contract such as:
   "phishing_probability": 0.982,
   "threshold": 0.73,
   "model": "xgboost",
-  "model_run": "phase2-a1e06b36c0af0662",
-  "feature_version": "phase1-a1e06b36c0af0662"
+  "model_run": "phase2-v2-72487aa3531fde58",
+  "feature_version": "phase1-v2-72487aa3531fde58"
 }
 ```
 
