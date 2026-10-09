@@ -17,7 +17,8 @@ Sibling repo, same process, different task: https://github.com/beaudamore/prompt
 - Phase 2 and Phase 3 have both run on v2 (2026-10-09). XGBoost test F1 0.810 / FPR 16.1%; CNN+BiGRU test F1 0.897 / recall 0.958 / FPR 15.3%. Results in the README and `docs/MODEL_CARD.md`.
 - All notebooks run unchanged on CUDA, Apple MPS, or CPU.
 - **Val-to-test FPR gap (1.8% vs 15.3%) is explained:** three TREC-07 bulk-mail sender domains held out in test account for 89% of test false positives; without them test FPR is 2.1%. It is domain-level split variance, not a bug. Do not report the val number as the result; do not quote the test FPR without a domain-level interval.
-- **Open task:** commit the executed notebooks and docs; then domain-level bootstrap and multi-seed splits (`docs/PROGRESS.md` Next Actions).
+- `notebooks/eval/eval_v2_locked_test.ipynb` (2026-10-09) adds recall-at-FPR, validation-chosen operating points, row- and domain-level bootstrap intervals, ECE and slices on the saved v2 models; results in `models/eval-v2-<fp>/eval_locked_test.json` and the README. Domain-level FPR interval for the text model at the alert tier: 1.4% to 25.8%.
+- **Open task:** multi-seed splits (three to five datagen seeds, retrain, report ranges), then the operating-point decision and the policy layer's bulk-sender handling (`docs/PROGRESS.md` Next Actions).
 - Phases 4 and 5 have not started.
 
 Full detail: `docs/OVERVIEW.md` (product, requirements, status), `docs/MODEL_CARD.md` (metrics), `docs/PROCESS.md` (how to run), `docs/PROGRESS.md` (log), `docs/EVALUATION.md` (verification criteria), `docs/PLAN.md` (design).

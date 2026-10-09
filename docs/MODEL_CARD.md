@@ -64,6 +64,20 @@ Validation drives selection; test and adversarial sets are opened once afterward
 
 The adversarial set is built by perturbing known phishing, so high recall shows the obfuscations do not break detection; it does not show robustness to novel campaigns.
 
+### Operating points chosen on validation (`notebooks/eval/eval_v2_locked_test.ipynb`, 2026-10-09)
+
+Threshold = lowest value whose validation FPR is within budget, then applied once to test. 95 % percentile bootstrap, 1,000 resamples.
+
+| Model | Budget | Threshold | Test recall | Test FPR | FPR interval (rows) | FPR interval (sender domains) | ECE |
+|---|---|---:|---:|---:|---:|---:|---:|
+| CNN + BiGRU | alert, FPR ≤ 1 % | 0.900 | 93.9 % | 12.8 % | 12.1 to 13.5 % | 1.4 to 25.8 % | 0.086 |
+| CNN + BiGRU | act, FPR ≤ 0.1 % | 0.992 | 81.4 % | 5.5 % | 5.0 to 6.0 % | 0.3 to 12.9 % | 0.086 |
+| XGBoost | alert, FPR ≤ 1 % | 0.893 | 48.2 % | 1.2 % | 1.0 to 1.5 % | 0.6 to 2.1 % | 0.039 |
+| XGBoost | act, FPR ≤ 0.1 % | 0.979 | 24.9 % | 0.6 % | 0.4 to 0.7 % | 0.04 to 1.5 % | 0.039 |
+| MLP | alert, FPR ≤ 1 % | 0.865 | 39.7 % | 2.0 % | 1.7 to 2.3 % | 1.0 to 3.6 % | 0.035 |
+
+Recall at FPR with the threshold set on test itself (upper bound): CNN 61.1 / 57.0 / 42.1 % at 1 / 0.5 / 0.1 %; XGBoost 42.5 / 12.9 / 6.0 %.
+
 ## Known failure modes and caveats
 
 - **Validation-to-test gap on the text model, located.** FPR 1.8 % on val versus 15.3 % on test. Three TREC-07 bulk-mail sender domains held out entirely in test (broadcast.shareholder.com, mail.cnn.com, cbsig.com) account for 89 % of the test false positives; without them the test FPR is 2.1 %. The gap is split-draw variance at the sender-domain level, not a corpus imbalance or a selection error. Treat the test number as the real one for unseen bulk senders, and treat its uncertainty as domain-level: a domain-level bootstrap and multiple split seeds are required before the FPR is quoted as a single figure. Legitimate bulk mail of this kind is a policy-layer concern (sender allow-listing), not something the body-only model can resolve.

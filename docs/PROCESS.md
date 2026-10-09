@@ -25,6 +25,11 @@ data/source-clean-v2/{train,val,test,adversarial_test}.parquet + manifest.json
       │
       └──▶ [Phase 3] notebooks/training/phase3_text_cnn_bigru_v2.ipynb
                 text CNN + BiGRU on subject+body → models/phase3-cnn-bigru-v2-<fp>/
+                      │
+                      ▼
+      [Eval] notebooks/eval/eval_v2_locked_test.ipynb   (loads the saved models, trains nothing)
+                recall at FPR, operating points chosen on val, row- and domain-level
+                bootstrap, ECE, slices → models/eval-v2-<fp>/eval_locked_test.json
 ```
 
 `<fp>` is the first 16 characters of the Phase 1 config fingerprint. Every training run records the fingerprint of the data it consumed, so a model can always be traced to the exact dataset build.
