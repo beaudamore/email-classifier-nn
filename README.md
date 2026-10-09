@@ -75,8 +75,33 @@ validation. Thresholds maximise validation F1.
 **Reading it.** The text model beats the Phase 2 bar by 15 recall points and 9 F1 points at a
 similar false-positive rate, so Phase 3 is the candidate. On the test mix that is 311 missed
 phishing emails and 1,324 false alarms out of 16,116. Neither model is inside the 1 % FPR
-alert budget; the operating point has to be re-chosen from a recall-at-FPR table, which is
-the next evaluation step.
+alert budget at the F1-max threshold; the operating-point table below is the deployment view.
+
+### Operating points chosen on validation, reported on test (`notebooks/eval/eval_v2_locked_test.ipynb`)
+
+The threshold is the lowest one whose **validation** FPR fits the budget from
+`docs/OVERVIEW.md` §5; it is then applied once to test. Intervals are 95 % percentile
+bootstraps, 1,000 resamples: row-level, and **sender-domain-level** (domains resampled whole).
+
+| Model | Budget set on val | Test recall | Test FPR | FPR interval, rows | FPR interval, domains | Adversarial recall |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| CNN + BiGRU | alert, FPR ≤ 1 % | 93.9 % | 12.8 % | 12.1 to 13.5 % | **1.4 to 25.8 %** | 99.4 % |
+| CNN + BiGRU | act, FPR ≤ 0.1 % | 81.4 % | 5.5 % | 5.0 to 6.0 % | 0.3 to 12.9 % | 96.3 % |
+| XGBoost | alert, FPR ≤ 1 % | 48.2 % | 1.2 % | 1.0 to 1.5 % | 0.6 to 2.1 % | 98.8 % |
+| XGBoost | act, FPR ≤ 0.1 % | 24.9 % | 0.6 % | 0.4 to 0.7 % | 0.04 to 1.5 % | 94.1 % |
+
+Recall at FPR measured on test itself (threshold set on test, an upper bound): CNN 61.1 % at
+1 %, 57.0 % at 0.5 %, 42.1 % at 0.1 %; XGBoost 42.5 %, 12.9 %, 6.0 %. Expected calibration
+error on test: XGBoost 0.039, MLP 0.035, CNN 0.086.
+
+**Reading the operating points.** Two things the headline table hides. First, the
+validation-chosen alert threshold holds on test for XGBoost (1.2 %) and does not hold for the
+text model (12.8 %), because the three held-out bulk-mail domains sit above any threshold
+chosen on validation. Second, the row-level interval on the text model's FPR is tight and
+wrong; the domain-level interval runs from 1.4 % to 25.8 %. That range, not 12.8 %, is the
+honest statement of what the text model's false-positive rate is on unseen senders, and it is
+why multi-seed splits are the next step. At the alert tier the text model still catches 94 % of
+phishing, so recall is not the problem; the policy layer's handling of bulk senders is.
 
 **The validation-to-test gap, explained.** The text model's validation FPR was 1.8 %; on test
 it is 15.3 %. Rescoring both splits with the saved model and slicing the false positives by
@@ -156,6 +181,7 @@ on first run.
 1. notebooks/datagen/email_phishing_datagen_v2.ipynb     -> data/source-clean-v2/{train,val,test,adversarial_test}.parquet + manifest.json
 2. notebooks/training/phase2_xgboost_mlp_baselines.ipynb  -> models/phase2-v2-<fingerprint>/
 3. notebooks/training/phase3_text_cnn_bigru_v2.ipynb      -> models/phase3-cnn-bigru-v2-<fingerprint>/
+4. notebooks/eval/eval_v2_locked_test.ipynb               -> models/eval-v2-<fingerprint>/eval_locked_test.json (loads the saved models; recall at FPR, operating points, row- and domain-level intervals, ECE, slices)
 ```
 
 Each training notebook verifies the data manifest and fingerprint before it trains, and opens
