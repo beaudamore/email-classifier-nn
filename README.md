@@ -85,9 +85,13 @@ v1 leakage means the gap is not yet trustworthy. Re-running Phase 3 on v2 is the
 ```text
 email-classifier-nn/
 ├── README.md
+├── CLAUDE.md                                 Handoff context for Claude Code on any machine
+├── .claude/skills/                           pipeline-status, notebook-editing
 ├── docs/
 │   ├── PLAN.md                               Scope, data strategy, architecture, phase roadmap
-│   ├── PROGRESS.md                           Implementation log (last updated 2026-08-14, predates the runs)
+│   ├── PROCESS.md                            How to run it, per machine, and the cross-machine git rules
+│   ├── EVALUATION.md                         Verification protocol: leakage audit, metrics, CIs, robustness, human review
+│   ├── PROGRESS.md                           Implementation log
 │   └── PRODUCTION_IMPLEMENTATION_OPTIONS.md  Outlook / Exchange deployment options and selection criteria
 ├── notebooks/
 │   ├── datagen/
@@ -97,6 +101,7 @@ email-classifier-nn/
 │       ├── phase2_xgboost_mlp_baselines.ipynb
 │       ├── phase3_text_cnn_bigru.ipynb       Produced the Phase 3 result above (v1 data)
 │       └── phase3_text_cnn_bigru_v2.ipynb    Same model on v2 splits; not yet run
+│   (all v2 notebooks run on CUDA, Apple MPS, or CPU without edits)
 ├── data/                                     (gitignored)
 │   ├── source-raw/*.parquet                  Raw HF pulls
 │   ├── source-clean/                         v1 splits + manifest
@@ -116,7 +121,7 @@ GPU is used by XGBoost (`device="cuda"`) and PyTorch.
 
 ```text
 1. notebooks/datagen/email_phishing_datagen_v2.ipynb     -> data/source-clean-v2/{train,val,test,adversarial_test}.parquet + manifest.json
-2. notebooks/training/phase2_xgboost_mlp_baselines.ipynb  -> models/v1-phase2-<fingerprint>/   (point it at v2 first)
+2. notebooks/training/phase2_xgboost_mlp_baselines.ipynb  -> models/phase2-v2-<fingerprint>/
 3. notebooks/training/phase3_text_cnn_bigru_v2.ipynb      -> models/phase3-cnn-bigru-<fingerprint>/
 ```
 
@@ -125,10 +130,11 @@ the test and adversarial sets only after model selection.
 
 ---
 
-## Status (2026-10-06)
+## Status (2026-10-09)
 
 - Phase 1 complete twice (v1 then v2).
 - Phase 2 and Phase 3 trained on v1 with the results above.
+- 2026-10-09: Phase 2 notebook switched to v2; all v2 notebooks run on CUDA, MPS, or CPU; `docs/PROCESS.md`, `docs/EVALUATION.md`, and `CLAUDE.md` added. Sibling repo [prompt-injection-nn](https://github.com/beaudamore/prompt-injection-nn) scaffolded on the same process.
 - Next: run Phase 2 and Phase 3 on the v2 splits and replace the results table; then Phase 4
   (targeted generated-data hardening) and Phase 5 (multi-class: phish / BEC / spam / legit) as
   laid out in `docs/PLAN.md`.
